@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Deck Dealer — Party Edition</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --muted:#9fb0ff; --text:#e9ecff;
+      --accent:#7c5cff; --accent2:#23c483; --danger:#ff4d6d; --warn:#ffb703; --line:#24315e;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 20% 10%, #1a2450 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    header{
+      padding:18px 18px; border-bottom:1px solid var(--line);
+      background: linear-gradient(90deg, rgba(124,92,255,.18), rgba(35,196,131,.12));
+    }
+    h1{margin:0 0 6px 0; font-size:20px; letter-spacing:.2px}
+    .sub{color:rgba(233,236,255,.75); font-size:13px; line-height:1.35}
+    .wrap{max-width:1200px; margin:0 auto; padding:16px}
+    .grid{display:grid; grid-template-columns: 380px 1fr; gap:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
+    .panel{
+      background: rgba(18,26,51,.94);
+      border: 1px solid rgba(36,49,94,.9);
+      border-radius: 18px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:14px 14px 10px 14px;
+      border-bottom: 1px solid rgba(36,49,94,.8);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .panel .hd h2{margin:0; font-size:14px; letter-spacing:.3px; color:rgba(233,236,255,.9)}
+    .panel .bd{padding:14px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .col{display:flex; flex-direction:column; gap:10px}
+    .btn{
+      border:1px solid rgba(124,92,255,.55);
+      background: rgba(124,92,255,.14);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:700;
+      transition:.15s transform, .15s background, .15s border;
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(124,92,255,.22); border-color: rgba(124,92,255,.85)}
+    .btn.green{border-color: rgba(35,196,131,.6); background: rgba(35,196,131,.12)}
+    .btn.green:hover{background: rgba(35,196,131,.18); border-color: rgba(35,196,131,.9)}
+    .btn.danger{border-color: rgba(255,77,109,.55); background: rgba(255,77,109,.12)}
+    .btn.danger:hover{background: rgba(255,77,109,.18); border-color: rgba(255,77,109,.9)}
+    .btn.warn{border-color: rgba(255,183,3,.6); background: rgba(255,183,3,.12)}
+    .btn.warn:hover{background: rgba(255,183,3,.18); border-color: rgba(255,183,3,.9)}
+    .btn.active{
+      border-color: rgba(35,196,131,.9);
+      background: rgba(35,196,131,.16);
+    }
+    .btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+    label{font-size:13px; color:rgba(233,236,255,.85)}
+    input[type="text"]{
+      background: rgba(11,16,32,.7);
+      border:1px solid rgba(36,49,94,.95);
+      color:var(--text);
+      border-radius: 10px;
+      padding:10px 10px;
+      outline:none;
+      flex:1;
+      min-width: 160px;
+    }
+    .hint{font-size:12px; color:rgba(233,236,255,.65); margin-top:6px}
+    .deck, .player{
+      border:1px solid rgba(36,49,94,.9);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(11,16,32,.55);
+    }
+    .deckTop{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .deckName{display:flex; align-items:center; gap:10px}
+    .check{display:flex; align-items:center; gap:8px}
+    .pill{
+      font-size:11px; padding:4px 8px; border-radius:999px;
+      border:1px solid rgba(36,49,94,.95);
+      color:rgba(233,236,255,.8);
+      background: rgba(18,26,51,.45);
+      white-space:nowrap;
+    }
+    .bigCard{
+      min-height: 320px;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      padding:22px;
+      text-align:center;
+      position:relative;
+    }
+    .q{
+      font-size: 22px;
+      line-height: 1.35;
+      letter-spacing:.2px;
+      margin:0;
+      max-width: 760px;
+      white-space:pre-line;
+    }
+    .meta{
+      margin-top:14px;
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+      font-size:12px; color:rgba(233,236,255,.7);
+    }
+    .tag{
+      border:1px solid rgba(36,49,94,.9);
+      background: rgba(11,16,32,.55);
+      padding:6px 10px;
+      border-radius: 999px;
+    }
+    .tag.penalty{
+      border-color: rgba(255,77,109,.55);
+      background: rgba(255,77,109,.10);
+      color: rgba(233,236,255,.92);
+    }
+    .tag.reward{
+      border-color: rgba(35,196,131,.6);
+      background: rgba(35,196,131,.10);
+      color: rgba(233,236,255,.92);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+      background: rgba(18,26,51,.95);
+      border:1px solid rgba(36,49,94,.95);
+      padding:10px 12px; border-radius: 12px;
+      font-size:13px; color:rgba(233,236,255,.92);
+      display:none;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      max-width: min(860px, calc(100vw - 24px));
+      text-align:center;
+      z-index: 50;
+    }
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+      max-height: 280px; overflow:auto; padding-right:6px;
+    }
+    .item{
+      border:1px solid rgba(36,49,94,.9);
+      background: rgba(11,16,32,.55);
+      border-radius: 14px;
+      padding:10px;
+    }
+    .item .top{display:flex; justify-content:space-between; gap:10px; align-items:center}
+    .item p{margin:8px 0 0 0; color:rgba(233,236,255,.9); font-size:13px; line-height:1.35}
+    .tiny{font-size:11px; color:rgba(233,236,255,.62)}
+    .sep{border:none;border-top:1px solid rgba(36,49,94,.85); margin:12px 0}
+    .scoreGrid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px}
+    @media (max-width: 980px){ .scoreGrid{grid-template-columns: 1fr;} }
+
+    /* Party mode: bigger, thumb-friendly */
+    body.party header{position:sticky; top:0; z-index:10; backdrop-filter: blur(6px)}
+    body.party .grid{grid-template-columns: 1fr;}
+    body.party .q{font-size:30px}
+    body.party .btn{padding:14px 16px; font-size:16px; border-radius: 16px}
+    body.party .panel{border-radius: 22px}
+    body.party .bigCard{min-height: 360px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Deck Dealer — Party Edition</h1>
+    <div class="sub">
+      Add players → 🎲 Start Game → Deal questions → Answered / Refused.<br/>
+      Includes modifiers, NSFW lock, random player turns, and a scoreboard.
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- LEFT: setup -->
+    <section class="panel">
+      <div class="hd">
+        <h2>Setup</h2>
+        <span class="pill" id="statusPill">Ready</span>
+      </div>
+      <div class="bd">
+        <details open style="margin-bottom:12px;">
+          <summary style="cursor:pointer; font-weight:800; color:rgba(233,236,255,.95);">
+            Rules (click to collapse)
+          </summary>
+          <div style="margin-top:10px; font-size:13px; line-height:1.45; color:rgba(233,236,255,.86);">
+            <ul style="margin:0 0 10px 18px; padding:0;">
+              <li>Tap <b>🎲 Start Game</b> to randomly choose who starts.</li>
+              <li>Tap <b>Deal</b> and read the question.</li>
+              <li><b>Answered</b> = you answered honestly.</li>
+              <li><b>Refused</b> = you didn’t answer → penalty applies.</li>
+            </ul>
+            <div class="hint">
+              Modifiers:<br/>
+              • <b>Make it a double</b>: refuse → drink double<br/>
+              • <b>Buy a round</b>: refuse → everyone else drinks<br/>
+              • <b>This round’s on me</b>: answer → give a sip to someone (random)
+            </div>
+          </div>
+        </details>
+
+        <hr class="sep"/>
+
+        <label><b>Players</b></label>
+        <div class="hint">Add at least 2 players. The app randomly picks whose turn it is.</div>
+        <div class="row" style="margin-top:8px">
+          <input id="playerInput" type="text" placeholder="Type a name…" />
+          <button class="btn" id="addPlayerBtn">Add</button>
+          <button class="btn danger" id="clearPlayersBtn">Clear</button>
+        </div>
+
+        <div id="playersList" class="list" style="margin-top:10px; max-height:180px"></div>
+
+        <hr class="sep"/>
+
+        <div class="row" style="justify-content:space-between; align-items:flex-end">
+          <div>
+            <label><b>Decks</b></label>
+            <div class="hint">Extra Dirty is locked unless you unlock NSFW.</div>
+          </div>
+          <div class="row">
+            <button class="btn" id="selectAllBtn">All</button>
+            <button class="btn" id="selectNoneBtn">None</button>
+          </div>
+        </div>
+
+        <div id="deckList" style="margin-top:10px"></div>
+
+        <label class="check" style="margin-top:10px">
+          <input type="checkbox" id="unlockNSFW" />
+          <span><b>Unlock NSFW deck</b> (Extra Dirty)</span>
+        </label>
+
+        <hr class="sep"/>
+
+        <label class="check">
+          <input type="checkbox" id="noRepeat" checked />
+          <span><b>No repeats</b> until the pool runs out</span>
+        </label>
+
+        <hr class="sep"/>
+
+        <label><b>Round modifiers</b></label>
+        <div class="hint">Tap to set one rule for this round (tap again to clear).</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="doubleBtn" title="Refuse = double drink">Make it a double</button>
+          <button class="btn" id="roundBtn" title="Refuse = everyone else drinks">Buy a round</button>
+          <button class="btn" id="onMeBtn" title="Answer = give someone a sip">This round’s on me</button>
+        </div>
+
+        <hr class="sep"/>
+
+        <div class="row" style="margin-top:8px">
+          <button class="btn warn" id="startBtn">🎲 Start Game</button>
+          <button class="btn green" id="dealBtn" disabled>Deal</button>
+          <button class="btn" id="partyBtn">Party Mode</button>
+          <button class="btn danger" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="hint" id="counts" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: gameplay -->
+    <section class="panel">
+      <div class="hd">
+        <h2>Dealer</h2>
+        <div class="row">
+          <button class="btn" id="answeredBtn" disabled>Answered</button>
+          <button class="btn danger" id="refusedBtn" disabled>Refused</button>
+          <button class="btn" id="copyBtn" disabled>Copy</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="bigCard">
+          <p class="q" id="qText">Add players, then press “🎲 Start Game”.</p>
+          <div class="meta" id="qMeta"></div>
+          <div class="meta" id="resultMeta"></div>
+        </div>
+
+        <hr class="sep"/>
+
+        <div class="row" style="justify-content:space-between; align-items:flex-end">
+          <div>
+            <label><b>Scoreboard</b></label>
+            <div class="hint">Taken = drinks you drank. Given = drinks you handed out.</div>
+          </div>
+        </div>
+
+        <div id="scoreboard" class="scoreGrid" style="margin-top:10px"></div>
+
+        <hr class="sep"/>
+
+        <label><b>History</b> <span class="tiny" id="historyHint"></span></label>
+        <div class="list" id="history" style="margin-top:10px"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* -----------------------------
+   QUESTIONS (baked into HTML)
+   ----------------------------- */
+const DECKS = {
+  "Happy Hour": [
+    "If you could instantly be great at something, what would it be?",
+    "What’s your most harmless hot take?",
+    "What’s the best compliment you’ve ever received?",
+    "What’s a small thing that makes you ridiculously happy?",
+    "What’s the best decision you’ve ever made?",
+    "What’s something you’re proud of that you don’t talk about much?",
+    "What’s your comfort movie or show?",
+    "What’s your comfort food?",
+    "What’s something you’re looking forward to?",
+    "What’s a hobby you’ve always wanted to try?",
+    "What’s your ideal day off?",
+    "What’s your dream trip?",
+    "What’s a song that always puts you in a good mood?",
+    "What’s your favorite way to spend time with friends?",
+    "What’s a random skill you have?",
+    "What’s the funniest thing you’ve seen online recently?",
+    "What’s your favorite smell?",
+    "What’s a small luxury you love?",
+    "What’s a tradition you actually like?",
+    "What’s something you’d tell your younger self?",
+    "What’s something you want to learn this year?",
+    "What’s the best meal you’ve ever had?",
+    "What’s a book/game you wish you could experience again for the first time?",
+    "What’s your favorite season and why?",
+    "What’s the nicest thing someone’s done for you?",
+    "What’s the nicest thing you’ve done for someone?",
+    "What’s your favorite place you’ve ever been?",
+    "What’s a weird thing you’re nostalgic about?",
+    "If you could have dinner with anyone (living or dead), who and why?",
+    "What’s a goal you’re working on right now?",
+    "What’s your favorite “simple pleasure”?",
+    "What’s something you appreciate more as you get older?",
+    "What’s the best advice you’ve ever gotten?",
+    "What’s your “I’m in a good mood” dance move?",
+    "What’s your favorite holiday and why?",
+    "If you could relive one day, which day would it be?",
+    "What’s a “green flag” you love in people?",
+    "What’s a small thing that instantly improves your day?",
+    "What’s a silly thing that scares you?",
+    "What’s your favorite way to celebrate good news?",
+    "What’s something you’re grateful for today?",
+    "What’s a smell that brings back a memory?",
+    "What’s your favorite meme format?",
+    "What’s your go-to karaoke song (even if you’d never do it)?",
+    "What’s a TV character you relate to?",
+    "What’s a food combo you swear by that others think is weird?",
+    "If you had a theme song, what would it be?",
+    "What’s your favorite kind of weather?",
+    "What’s your favorite thing about where you live?",
+    "What’s a skill you’ve improved recently?",
+    "What’s the best part of your routine?",
+    "If you could teleport anywhere right now, where would you go?",
+    "What’s a tiny hill you’re willing to die on (harmless edition)?",
+    "What’s the funniest “misunderstanding” you’ve had?",
+    "What’s a hobby you think is underrated?"
+  ],
+  "On the Rocks": [
+    "Have you ever fallen in love?",
+    "What’s the most embarrassing thing you’ve ever done?",
+    "What’s the biggest lie you’ve ever told?",
+    "What’s the most childish thing you still do?",
+    "What’s your biggest insecurity?",
+    "What’s the worst thing you’ve ever said to someone?",
+    "What’s something you’ve done that you still feel guilty about?",
+    "What’s your biggest fear?",
+    "What’s the most impulsive thing you’ve ever done?",
+    "What’s the weirdest thing you’ve ever done for money?",
+    "What’s the worst date you’ve ever been on?",
+    "What’s the most illegal thing you’ve ever done?",
+    "What’s the biggest mistake you’ve ever made?",
+    "What’s the meanest thing you’ve ever done?",
+    "What’s the most trouble you’ve ever gotten into?",
+    "What’s the worst thing you’ve ever said behind someone’s back?",
+    "What’s the most awkward thing you’ve ever said?",
+    "What’s your most irrational pet peeve?",
+    "What’s something you’ve done that you hope no one finds out about?",
+    "If you could erase one moment from your life, what would it be?",
+    "What’s the most dramatic thing you’ve ever done?",
+    "What’s the most ridiculous thing you’ve ever cried about?",
+    "What’s the most toxic thing you’ve ever done in a relationship?",
+    "What’s something you do that would give people the ick?",
+    "What’s a secret you’ve kept from your parents?",
+    "What’s the most embarrassing thing you’ve ever said while flirting?",
+    "What’s the most cringe thing you’ve ever posted online?",
+    "What’s something you pretend to like but don’t?",
+    "What’s your most controversial opinion?",
+    "Who was your first crush and why?",
+    "What’s the worst gift you’ve ever received?",
+    "What’s the worst gift you’ve ever given?",
+    "If your ex(es) were here, what would they say about you?",
+    "What’s the worst thing you’ve ever done while drunk?",
+    "What’s the most awkward run-in you’ve had with someone?",
+    "What’s your biggest turn-off?",
+    "What’s your biggest turn-on?",
+    "What’s something you’ve done out of jealousy?",
+    "What’s the pettiest thing you’ve ever done?",
+    "What’s the pettiest reason you’ve ever disliked someone?",
+    "What’s the worst fashion phase you’ve had?",
+    "What’s the worst haircut you’ve ever had?",
+    "What’s the last thing you searched on your phone?",
+    "What’s the weirdest thing you’ve ever eaten?",
+    "What’s your guilty pleasure?",
+    "What’s the worst movie you’ve ever loved?",
+    "What’s the most embarrassing song you know all the words to?",
+    "What’s the strangest dream you’ve had recently?",
+    "What’s a rumor you’ve heard about yourself?",
+    "What’s a rumor you’ve started (or helped spread) about someone else?",
+    "What’s the last lie you told?",
+    "What’s one thing you’d change about yourself if you could?",
+    "What’s something you’ve stolen?",
+    "What’s the worst job you’ve ever had (or would never do)?",
+    "What’s the worst advice you’ve ever given?",
+    "What’s the worst advice you’ve ever taken?",
+    "What’s the biggest compliment you’ve ever gotten?",
+    "What’s the biggest insult you’ve ever gotten?",
+    "If you had to delete one app forever, which would it be?",
+    "Who do you compare yourself to the most?",
+    "What’s the most insecure you’ve ever felt?",
+    "If you could read one person’s mind for a day, whose would it be and why?",
+    "What’s the most dramatic thing you’ve done for attention?",
+    "What’s something you wish you cared less about?"
+  ],
+  "Last Call": [
+    "Who in this group would you trust most with a secret?",
+    "Who in this group would you trust least with a secret?",
+    "Who in this group would survive a zombie apocalypse the longest?",
+    "Who in this group would die first in a zombie apocalypse?",
+    "Who in this group would make the best partner?",
+    "Who in this group would make the worst partner?",
+    "Who in this group is most likely to ghost someone?",
+    "Who in this group is most likely to get ghosted?",
+    "Who in this group would be most likely to get arrested?",
+    "Who in this group would be most likely to talk their way out of getting arrested?",
+    "Who in this group is most likely to become famous?",
+    "Who in this group is most likely to become infamous?",
+    "Who in this group is the best liar?",
+    "Who in this group is the worst liar?",
+    "Who in this group would you want on your trivia team?",
+    "Who in this group would you not want on your trivia team?",
+    "Who in this group would you want to be stuck on a deserted island with?",
+    "Who in this group would you not want to be stuck on a deserted island with?",
+    "Who in this group would you let set you up on a blind date?",
+    "Who in this group would you never let set you up on a blind date?",
+    "Who in this group would you hire first?",
+    "Who in this group would you fire first?",
+    "Who in this group is most likely to accidentally start a fire?",
+    "Who in this group is most likely to accidentally start drama?",
+    "Who in this group would you call if you needed help at 3am?",
+    "Who in this group would you not call if you needed help at 3am?",
+    "Who in this group would you trust to plan your birthday?",
+    "Who in this group would you not trust to plan your birthday?",
+    "Who in this group is most likely to have a secret second life?",
+    "Who in this group is most likely to be a secret villain?",
+    "Who in this group is most likely to get rich?",
+    "Who in this group is most likely to stay broke?",
+    "Who in this group has the best taste?",
+    "Who in this group has the worst taste?",
+    "Who in this group is most likely to cry at a movie?",
+    "Who in this group is least likely to cry at a movie?",
+    "Who in this group is most likely to flirt their way into something?",
+    "Who in this group is most likely to fumble a flirt?",
+    "Who in this group would you want as your roommate?",
+    "Who in this group would you never want as your roommate?",
+    "Who in this group is most likely to cancel plans last minute?",
+    "Who in this group is most likely to be early to plans?",
+    "Who in this group would you trust to babysit?",
+    "Who in this group would you not trust to babysit?",
+    "Who in this group is most likely to have the best comeback?",
+    "Who in this group is most likely to have the worst comeback?",
+    "Who in this group would win in a fight?",
+    "Who in this group would lose in a fight?",
+    "Who in this group is most likely to forget your birthday?",
+    "Who in this group is most likely to remember your birthday?",
+    "Who in this group would you want to go on a road trip with?",
+    "Who in this group would you not want to go on a road trip with?",
+    "Who in this group is most likely to be the best cook?",
+    "Who in this group is most likely to burn water?",
+    "Who in this group is most likely to give great advice?",
+    "Who in this group is most likely to give terrible advice?",
+    "Who in this group is most likely to be a heartbreaker?",
+    "Who in this group is most likely to get their heart broken?",
+    "Who in this group is most likely to text their ex?",
+    "Who in this group is most likely to block their ex?"
+  ],
+  "Extra Dirty (NSFW)": [
+    "What’s the weirdest thing you find attractive?",
+    "What’s the fastest you’ve caught feelings?",
+    "What’s the biggest red flag you’ve ignored?",
+    "What’s the most embarrassing thing that’s happened to you while hooking up?",
+    "What’s the most awkward thing you’ve said right after sex?",
+    "What’s the most unexpected place you’ve hooked up?",
+    "What’s the most unexpected person you’ve been attracted to?",
+    "What’s the worst text you’ve sent to the wrong person?",
+    "What’s the most desperate thing you’ve done for attention?",
+    "What’s the most unhinged thing you’ve done while horny?",
+    "What’s a kink you’re curious about?",
+    "What’s a kink that’s a hard no for you?",
+    "What’s the most petty reason you’ve stopped talking to someone?",
+    "What’s something you’ve done that would absolutely scandalize your family?",
+    "What’s the most toxic thing you’ve done in a situationship?",
+    "What’s the most toxic thing someone’s done to you in a situationship?",
+    "What’s the most chaotic date you’ve ever been on?",
+    "What’s your biggest “hear me out” crush?",
+    "What’s the worst hookup you’ve ever had?",
+    "What’s the best hookup you’ve ever had?",
+    "What’s the most ridiculous thing you’ve done to impress someone?",
+    "What’s the most embarrassing thing you’ve done for a crush?",
+    "What’s the weirdest compliment you’ve ever gotten?",
+    "What’s the weirdest compliment you’ve ever given?",
+    "What’s the most scandalous rumor about you that’s actually true?",
+    "What’s the most scandalous rumor about you that’s not true?",
+    "What’s the meanest thing you’ve ever said to a partner?",
+    "What’s the meanest thing a partner has said to you?",
+    "What’s the biggest age gap you’d date?",
+    "What’s the biggest age gap you’ve dated?",
+    "What’s your worst “I can fix them” moment?",
+    "What’s the most jealous you’ve ever been?",
+    "What’s the most possessive thing you’ve ever done?",
+    "What’s something you’ve done to make someone jealous?",
+    "What’s the most dramatic breakup you’ve seen?",
+    "What’s the most dramatic breakup you’ve had?",
+    "What’s the most confusing “mixed signals” you’ve gotten?",
+    "What’s the most confusing “mixed signals” you’ve given?",
+    "What’s your most chaotic “dating app” story?",
+    "What’s your most chaotic “night out” story?",
+    "What’s the most regrettable thing you’ve done while drunk?",
+    "What’s the most regrettable thing you’ve done while texting?",
+    "What’s the most flirty thing you’ve said that you regret?",
+    "What’s the most flirty thing someone’s said to you?",
+    "What’s your biggest “toxic trait” in dating?",
+    "What’s your biggest “green flag” in dating?",
+    "What’s something you’d never admit on a first date?",
+    "What’s a dealbreaker you’ve ignored?",
+    "What’s the biggest lie you’ve told someone you were dating?",
+    "What’s the biggest lie someone told you while dating?",
+    "What’s the most suspicious thing you’ve snooped for?",
+    "What’s the most suspicious thing you’ve found while snooping?",
+    "What’s the most embarrassing notification you’ve gotten at the worst time?",
+    "What’s your go-to move when you’re trying to seduce someone?",
+    "What’s your go-to “I’m not interested” move?",
+    "What’s your most unhinged “I miss you” text?",
+    "What’s the most chaotic thing you’ve done after a breakup?",
+    "What’s something you’ve forgiven that you probably shouldn’t have?",
+    "What’s something you wouldn’t forgive?",
+    "What’s the wildest compliment you’d actually love to hear?",
+    "What’s the wildest thing you’ve done out of spite?",
+    "What’s the most “main character” thing you’ve done in a relationship?",
+    "What’s your biggest “ick” that you know is unreasonable?",
+    "What’s the biggest boundary you’ve ever set too late?"
+  ]
+};
+
+/* -----------------------------
+   App state
+   ----------------------------- */
+const $ = (s)=>document.querySelector(s);
+const toastEl = $("#toast");
+const statusPill = $("#statusPill");
+
+const playerInput = $("#playerInput");
+const addPlayerBtn = $("#addPlayerBtn");
+const clearPlayersBtn = $("#clearPlayersBtn");
+const playersList = $("#playersList");
+
+const deckListEl = $("#deckList");
+const unlockNSFWEl = $("#unlockNSFW");
+const noRepeatEl = $("#noRepeat");
+
+const doubleBtn = $("#doubleBtn");
+const roundBtn  = $("#roundBtn");
+const onMeBtn   = $("#onMeBtn");
+
+const startBtn = $("#startBtn");
+const dealBtn = $("#dealBtn");
+const partyBtn = $("#partyBtn");
+const resetBtn = $("#resetBtn");
+
+const answeredBtn = $("#answeredBtn");
+const refusedBtn  = $("#refusedBtn");
+const copyBtn = $("#copyBtn");
+
+const qText = $("#qText");
+const qMeta = $("#qMeta");
+const resultMeta = $("#resultMeta");
+
+const scoreboardEl = $("#scoreboard");
+const historyEl = $("#history");
+const historyHint = $("#historyHint");
+const countsEl = $("#counts");
+
+let players = [];                 // ["Alex", "Sam"]
+let scores = {};                  // {Alex:{taken:0,given:0}, ...}
+let currentPlayer = null;         // string
+let lastQuestion = null;          // {deck, text}
+let currentModifier = null;       // "double" | "round" | "onme" | null
+
+let used = new Set();             // no-repeat keys
+let pool = [];                    // draw pool: [{deck,text},...]
+let history = [];                 // last 25: [{deck,text,by,modifier,outcome}]
+
+const MODIFIERS = {
+  double: { label:"Make it a double", desc:"Refuse → drink double" },
+  round:  { label:"Buy a round", desc:"Refuse → everyone else drinks" },
+  onme:   { label:"This round’s on me", desc:"Answer → give someone a sip" }
+};
+
+const deckState = Object.keys(DECKS).map(name => ({
+  name,
+  enabled: name !== "Extra Dirty (NSFW)" // locked by default
+}));
+
+/* -----------------------------
+   Helpers
+   ----------------------------- */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+let toastT=null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = "block";
+  clearTimeout(toastT);
+  toastT = setTimeout(()=> toastEl.style.display="none", 1600);
+}
+function setStatus(text){
+  statusPill.textContent = text;
+}
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function randInt(n){ return Math.floor(Math.random()*n); }
+function chooseRandomPlayer(exceptName=null){
+  if(players.length === 0) return null;
+  if(players.length === 1) return players[0];
+  // try a few times to avoid selecting the same person when needed
+  for(let i=0;i<10;i++){
+    const p = players[randInt(players.length)];
+    if(!exceptName || p !== exceptName) return p;
+  }
+  // fallback
+  return players[randInt(players.length)];
+}
+function keyFor(q){ return q.deck + "::" + q.text; }
+
+/* -----------------------------
+   Rendering
+   ----------------------------- */
+function renderPlayers(){
+  playersList.innerHTML = "";
+  if(players.length === 0){
+    playersList.innerHTML = `<div class="hint">No players yet.</div>`;
+    return;
+  }
+
+  for(const p of players){
+    const div = document.createElement("div");
+    div.className = "player";
+    div.innerHTML = `
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <div>
+          <b>${escapeHtml(p)}</b>
+          ${currentPlayer === p ? `<span class="pill" style="margin-left:8px;border-color:rgba(35,196,131,.7)">Current</span>` : ``}
+        </div>
+        <button class="btn danger" data-remove="${encodeURIComponent(p)}" title="Remove player">Remove</button>
+      </div>
+      <div class="hint">Taken: <b>${scores[p]?.taken ?? 0}</b> • Given: <b>${scores[p]?.given ?? 0}</b></div>
+    `;
+    playersList.appendChild(div);
+  }
+
+  playersList.querySelectorAll("button[data-remove]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const name = decodeURIComponent(btn.getAttribute("data-remove"));
+      removePlayer(name);
+    });
+  });
+}
+
+function renderDecks(){
+  deckListEl.innerHTML = "";
+  for(const d of deckState){
+    const isNSFW = d.name === "Extra Dirty (NSFW)";
+    const locked = isNSFW && !unlockNSFWEl.checked;
+
+    const wrap = document.createElement("div");
+    wrap.className = "deck";
+    wrap.innerHTML = `
+      <div class="deckTop">
+        <div class="deckName">
+          <label class="check">
+            <input type="checkbox" data-deck="${escapeHtml(d.name)}" ${d.enabled ? "checked":""} ${locked ? "disabled":""} />
+            <span><b>${escapeHtml(d.name)}</b></span>
+          </label>
+          <span class="pill">${(DECKS[d.name]||[]).length} q</span>
+          ${locked ? `<span class="pill" style="border-color: rgba(255,183,3,.65)">Locked</span>` : ``}
+        </div>
+      </div>
+    `;
+    deckListEl.appendChild(wrap);
+  }
+
+  deckListEl.querySelectorAll("input[data-deck]").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const name = e.target.getAttribute("data-deck");
+      const d = deckState.find(x=>x.name===name);
+      d.enabled = e.target.checked;
+      rebuildPool(false);
+    });
+  });
+}
+
+function renderScoreboard(){
+  scoreboardEl.innerHTML = "";
+  if(players.length === 0){
+    scoreboardEl.innerHTML = `<div class="hint">Add players to see the scoreboard.</div>`;
+    return;
+  }
+
+  for(const p of players){
+    const card = document.createElement("div");
+    card.className = "deck";
+    const s = scores[p] || {taken:0,given:0};
+    card.innerHTML = `
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <b>${escapeHtml(p)} ${currentPlayer===p ? "• 🎯" : ""}</b>
+        <span class="pill">Taken: ${s.taken} • Given: ${s.given}</span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" data-plus-taken="${encodeURIComponent(p)}">+1 Taken</button>
+        <button class="btn" data-plus-given="${encodeURIComponent(p)}">+1 Given</button>
+        <button class="btn danger" data-minus-taken="${encodeURIComponent(p)}">-1 Taken</button>
+      </div>
+    `;
+    scoreboardEl.appendChild(card);
+  }
+
+  scoreboardEl.querySelectorAll("button[data-plus-taken]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const p = decodeURIComponent(b.getAttribute("data-plus-taken"));
+      scores[p].taken += 1;
+      renderPlayers(); renderScoreboard();
+    });
+  });
+  scoreboardEl.querySelectorAll("button[data-plus-given]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const p = decodeURIComponent(b.getAttribute("data-plus-given"));
+      scores[p].given += 1;
+      renderPlayers(); renderScoreboard();
+    });
+  });
+  scoreboardEl.querySelectorAll("button[data-minus-taken]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const p = decodeURIComponent(b.getAttribute("data-minus-taken"));
+      scores[p].taken = Math.max(0, scores[p].taken - 1);
+      renderPlayers(); renderScoreboard();
+    });
+  });
+}
+
+function renderHistory(){
+  historyEl.innerHTML = "";
+  if(history.length === 0){
+    historyEl.innerHTML = `<div class="hint">No pulls yet.</div>`;
+    historyHint.textContent = "";
+    return;
+  }
+  historyHint.textContent = `• showing ${Math.min(25, history.length)} of ${history.length}`;
+
+  for(const h of history.slice(0,25)){
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="top">
+        <span class="pill">${escapeHtml(h.deck)}</span>
+        <span class="tiny">${escapeHtml(h.by)} • ${h.outcome}</span>
+      </div>
+      <p>${escapeHtml(h.text)}</p>
+      <div class="tiny" style="margin-top:8px">
+        Modifier: ${h.modifier ? escapeHtml(h.modifier) : "None"}
+      </div>
+    `;
+    historyEl.appendChild(div);
+  }
+}
+
+function updateCounts(){
+  const enabledDecks = deckState
+    .filter(d => d.enabled && !(d.name==="Extra Dirty (NSFW)" && !unlockNSFWEl.checked))
+    .map(d => d.name);
+
+  const selectedQ = enabledDecks.reduce((sum,name)=>sum + (DECKS[name]?.length||0), 0);
+  countsEl.textContent = selectedQ
+    ? `Selected questions: ${selectedQ} • Used: ${used.size} • Players: ${players.length}`
+    : `Select at least 1 deck.`;
+}
+
+/* -----------------------------
+   Pool + meta
+   ----------------------------- */
+function enabledDeckNames(){
+  return deckState
+    .filter(d => d.enabled)
+    .map(d => d.name)
+    .filter(name => !(name==="Extra Dirty (NSFW)" && !unlockNSFWEl.checked));
+}
+
+function rebuildPool(clearUsed){
+  const enabled = enabledDeckNames();
+  const next = [];
+  for(const name of enabled){
+    for(const q of (DECKS[name]||[])){
+      next.push({ deck:name, text:q });
+    }
+  }
+  pool = shuffleArray(next);
+  if(clearUsed) used = new Set();
+  updateCounts();
+  setStatus(pool.length ? "Ready" : "No decks selected");
+}
+
+function setModifier(key){
+  if(currentModifier === key){
+    currentModifier = null;
+  }else{
+    currentModifier = key;
+  }
+  doubleBtn.classList.toggle("active", currentModifier==="double");
+  roundBtn.classList.toggle("active",  currentModifier==="round");
+  onMeBtn.classList.toggle("active",   currentModifier==="onme");
+  renderQuestionMeta();
+}
+
+function renderQuestionMeta(){
+  const pieces = [];
+
+  if(currentPlayer){
+    pieces.push(`<span class="tag">Current: <b>${escapeHtml(currentPlayer)}</b></span>`);
+  }
+  if(lastQuestion){
+    pieces.push(`<span class="tag">Deck: <b>${escapeHtml(lastQuestion.deck)}</b></span>`);
+  }
+  if(currentModifier){
+    pieces.push(`<span class="tag">Rule: <b>${escapeHtml(MODIFIERS[currentModifier].label)}</b></span>`);
+  }
+  qMeta.innerHTML = pieces.join("");
+}
+
+function clearOutcome(){
+  resultMeta.innerHTML = "";
+}
+
+function setOutcomeTag(kind, text){
+  const cls = kind === "refused" ? "penalty" : "reward";
+  resultMeta.innerHTML = `<span class="tag ${cls}"><b>${escapeHtml(text)}</b></span>`;
+}
+
+/* -----------------------------
+   Gameplay
+   ----------------------------- */
+function canPlay(){
+  if(players.length < 2){
+    toast("Add at least 2 players.");
+    return false;
+  }
+  if(enabledDeckNames().length === 0){
+    toast("Select at least 1 deck.");
+    return false;
+  }
+  return true;
+}
+
+function startGame(){
+  if(!canPlay()) return;
+
+  currentPlayer = chooseRandomPlayer();
+  lastQuestion = null;
+  clearOutcome();
+
+  qText.textContent = `🎲 ${currentPlayer} starts the game!`;
+  renderQuestionMeta();
+
+  dealBtn.disabled = false;
+  answeredBtn.disabled = true;
+  refusedBtn.disabled = true;
+  copyBtn.disabled = true;
+
+  renderPlayers(); renderScoreboard();
+  toast(`${currentPlayer} starts!`);
+}
+
+function drawQuestion(){
+  if(pool.length === 0){
+    rebuildPool(false);
+    if(pool.length === 0) return null;
+  }
+
+  const noRepeat = noRepeatEl.checked;
+
+  for(let tries=0; tries<pool.length; tries++){
+    const q = pool.pop();
+    const k = keyFor(q);
+    if(!noRepeat || !used.has(k)){
+      if(noRepeat) used.add(k);
+      return q;
+    }
+  }
+
+  // everything used
+  used = new Set();
+  rebuildPool(false);
+  toast("Reshuffled 🔄");
+  return pool.pop() || null;
+}
+
+function deal(){
+  if(!canPlay()) return;
+  if(!currentPlayer){
+    toast("Press “🎲 Start Game” first.");
+    return;
+  }
+
+  const q = drawQuestion();
+  if(!q){
+    toast("No questions available.");
+    return;
+  }
+
+  lastQuestion = q;
+  clearOutcome();
+
+  qText.textContent = `${currentPlayer}'s turn:\n\n${q.text}`;
+  renderQuestionMeta();
+
+  answeredBtn.disabled = false;
+  refusedBtn.disabled = false;
+  copyBtn.disabled = false;
+
+  updateCounts();
+}
+
+function nextTurn(){
+  currentPlayer = chooseRandomPlayer();
+  renderPlayers();
+  renderScoreboard();
+  renderQuestionMeta();
+  // show a quick "next up" prompt without overwriting the last question text too aggressively
+  setTimeout(()=>{
+    if(!lastQuestion) return;
+    qText.textContent = `Next up: ${currentPlayer}\n\nTap Deal for the next question.`;
+    renderQuestionMeta();
+  }, 900);
+}
+
+function answered(){
+  if(!currentPlayer || !lastQuestion){
+    toast("Deal a question first.");
+    return;
+  }
+
+  clearOutcome();
+
+  if(currentModifier === "onme"){
+    // current player gives a sip to someone else (if possible)
+    const target = chooseRandomPlayer(currentPlayer);
+    scores[currentPlayer].given += 1;
+    scores[target].taken += 1;
+
+    setOutcomeTag("answered", `Answered → ${currentPlayer} gives a sip to ${target} 🍻`);
+    toast(`${currentPlayer} → ${target} 🍻`);
+  }else{
+    setOutcomeTag("answered", `Answered ✅ No penalty`);
+    toast("Answered ✅");
+  }
+
+  history.unshift({
+    deck: lastQuestion.deck,
+    text: lastQuestion.text,
+    by: currentPlayer,
+    modifier: currentModifier ? MODIFIERS[currentModifier].label : null,
+    outcome: "Answered"
+  });
+  history = history.slice(0, 200);
+
+  renderPlayers(); renderScoreboard(); renderHistory();
+  nextTurn();
+}
+
+function refused(){
+  if(!currentPlayer || !lastQuestion){
+    toast("Deal a question first.");
+    return;
+  }
+
+  clearOutcome();
+
+  if(currentModifier === "round"){
+    // everyone else drinks 1
+    for(const p of players){
+      if(p !== currentPlayer) scores[p].taken += 1;
+    }
+    setOutcomeTag("refused", `Refused → Everyone else drinks 🍻`);
+    toast("Everyone else drinks 🍻");
+  } else {
+    const amount = currentModifier === "double" ? 2 : 1;
+    scores[currentPlayer].taken += amount;
+    setOutcomeTag("refused", `Refused → ${currentPlayer} drinks ${amount} 🍻`);
+    toast(`${currentPlayer} drinks ${amount} 🍻`);
+  }
+
+  history.unshift({
+    deck: lastQuestion.deck,
+    text: lastQuestion.text,
+    by: currentPlayer,
+    modifier: currentModifier ? MODIFIERS[currentModifier].label : null,
+    outcome: "Refused"
+  });
+  history = history.slice(0, 200);
+
+  renderPlayers(); renderScoreboard(); renderHistory();
+  nextTurn();
+}
+
+/* -----------------------------
+   Player management
+   ----------------------------- */
+function addPlayer(){
+  const name = (playerInput.value || "").trim();
+  if(!name) return toast("Type a name first.");
+  if(players.includes(name)) return toast("That name is already added.");
+
+  players.push(name);
+  scores[name] = scores[name] || { taken:0, given:0 };
+  playerInput.value = "";
+
+  if(!currentPlayer && players.length >= 2){
+    setStatus("Ready to start");
+  }
+
+  renderPlayers();
+  renderScoreboard();
+  updateCounts();
+}
+
+function removePlayer(name){
+  players = players.filter(p=>p!==name);
+  delete scores[name];
+
+  if(currentPlayer === name){
+    currentPlayer = players.length ? chooseRandomPlayer() : null;
+  }
+
+  // If fewer than 2 players, stop gameplay
+  if(players.length < 2){
+    dealBtn.disabled = true;
+    answeredBtn.disabled = true;
+    refusedBtn.disabled = true;
+    copyBtn.disabled = true;
+    currentPlayer = null;
+    lastQuestion = null;
+    qText.textContent = "Add players, then press “🎲 Start Game”.";
+    qMeta.innerHTML = "";
+    clearOutcome();
+  }
+
+  renderPlayers();
+  renderScoreboard();
+  renderQuestionMeta();
+  updateCounts();
+}
+
+function clearPlayers(){
+  players = [];
+  scores = {};
+  currentPlayer = null;
+  lastQuestion = null;
+
+  dealBtn.disabled = true;
+  answeredBtn.disabled = true;
+  refusedBtn.disabled = true;
+  copyBtn.disabled = true;
+
+  qText.textContent = "Add players, then press “🎲 Start Game”.";
+  qMeta.innerHTML = "";
+  clearOutcome();
+
+  renderPlayers();
+  renderScoreboard();
+  updateCounts();
+  toast("Players cleared.");
+}
+
+/* -----------------------------
+   Events
+   ----------------------------- */
+addPlayerBtn.addEventListener("click", addPlayer);
+playerInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") addPlayer();
+});
+clearPlayersBtn.addEventListener("click", clearPlayers);
+
+unlockNSFWEl.addEventListener("change", ()=>{
+  // If NSFW is locked off, ensure deck disabled
+  const nsfw = deckState.find(d=>d.name==="Extra Dirty (NSFW)");
+  if(!unlockNSFWEl.checked){
+    nsfw.enabled = false;
+  }
+  renderDecks();
+  rebuildPool(false);
+});
+
+$("#selectAllBtn").addEventListener("click", ()=>{
+  for(const d of deckState){
+    if(d.name==="Extra Dirty (NSFW)" && !unlockNSFWEl.checked){
+      d.enabled = false;
+    }else{
+      d.enabled = true;
+    }
+  }
+  renderDecks();
+  rebuildPool(false);
+  toast("Selected decks updated.");
+});
+$("#selectNoneBtn").addEventListener("click", ()=>{
+  for(const d of deckState){
+    d.enabled = false;
+  }
+  renderDecks();
+  rebuildPool(false);
+  toast("Selected none.");
+});
+
+noRepeatEl.addEventListener("change", ()=>{
+  toast(noRepeatEl.checked ? "No repeats ON" : "No repeats OFF");
+});
+
+doubleBtn.addEventListener("click", ()=> setModifier("double"));
+roundBtn.addEventListener("click",  ()=> setModifier("round"));
+onMeBtn.addEventListener("click",   ()=> setModifier("onme"));
+
+startBtn.addEventListener("click", startGame);
+dealBtn.addEventListener("click", deal);
+answeredBtn.addEventListener("click", answered);
+refusedBtn.addEventListener("click", refused);
+
+copyBtn.addEventListener("click", async ()=>{
+  if(!lastQuestion) return;
+  try{
+    await navigator.clipboard.writeText(lastQuestion.text);
+    toast("Copied ✅");
+  }catch{
+    toast("Copy failed (browser blocked).");
+  }
+});
+
+partyBtn.addEventListener("click", ()=>{
+  document.body.classList.toggle("party");
+  toast(document.body.classList.contains("party") ? "Party Mode ON 🎉" : "Party Mode OFF");
+});
+
+resetBtn.addEventListener("click", ()=>{
+  // full reset, but keep baked questions obviously
+  currentModifier = null;
+  doubleBtn.classList.remove("active");
+  roundBtn.classList.remove("active");
+  onMeBtn.classList.remove("active");
+
+  used = new Set();
+  pool = [];
+  history = [];
+  lastQuestion = null;
+  currentPlayer = null;
+
+  qText.textContent = "Add players, then press “🎲 Start Game”.";
+  qMeta.innerHTML = "";
+  clearOutcome();
+
+  dealBtn.disabled = true;
+  answeredBtn.disabled = true;
+  refusedBtn.disabled = true;
+  copyBtn.disabled = true;
+
+  // keep players + scores (reset should keep or wipe? we'll keep them but reset scores too)
+  for(const p of players){
+    scores[p].taken = 0;
+    scores[p].given = 0;
+  }
+
+  renderPlayers();
+  renderScoreboard();
+  renderHistory();
+  rebuildPool(true);
+
+  setStatus("Ready");
+  toast("Reset ✅ (scores cleared, decks reshuffled)");
+});
+
+/* -----------------------------
+   Init
+   ----------------------------- */
+function init(){
+  renderDecks();
+  rebuildPool(true);
+  renderPlayers();
+  renderScoreboard();
+  renderHistory();
+  updateCounts();
+  setStatus("Ready");
+}
+init();
+</script>
+</body>
+</html>
