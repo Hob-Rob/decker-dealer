@@ -313,7 +313,6 @@
    ----------------------------- */
 const DECKS = {
   "Happy Hour": [
-    // Wholesome / light / fun
     "If you could instantly be great at something, what would it be?",
     "What’s your most harmless hot take?",
     "What’s the best compliment you’ve ever received?",
@@ -369,8 +368,6 @@ const DECKS = {
     "What’s a tiny hill you’re willing to die on (harmless edition)?",
     "What’s the funniest “misunderstanding” you’ve had?",
     "What’s a hobby you think is underrated?",
-
-    // New wholesome / fun additions
     "What’s something you love that you wish wasn’t “cringe”?",
     "What’s the best thing about your best friend?",
     "What’s a compliment you wish people gave you more often?",
@@ -424,7 +421,6 @@ const DECKS = {
   ],
 
   "On the Rocks": [
-    // Original
     "Have you ever fallen in love?",
     "What’s the most embarrassing thing you’ve ever done?",
     "What’s the biggest lie you’ve ever told?",
@@ -489,8 +485,6 @@ const DECKS = {
     "If you could read one person’s mind for a day, whose would it be and why?",
     "What’s the most dramatic thing you’ve done for attention?",
     "What’s something you wish you cared less about?",
-
-    // New: spicier but not explicit
     "What’s a red flag you ignored because they were hot?",
     "What’s the pettiest reason you’ve lost interest in someone?",
     "What’s the most embarrassing “I was down bad” moment?",
@@ -541,7 +535,6 @@ const DECKS = {
   ],
 
   "Last Call": [
-    // Original
     "Who in this group would you trust most with a secret?",
     "Who in this group would you trust least with a secret?",
     "Who in this group would survive a zombie apocalypse the longest?",
@@ -602,8 +595,6 @@ const DECKS = {
     "Who in this group is most likely to get their heart broken?",
     "Who in this group is most likely to text their ex?",
     "Who in this group is most likely to block their ex?",
-
-    // New: spicier group-callout prompts (still safe)
     "Who here is most likely to fall for someone after one good conversation?",
     "Who here is most likely to have a “secret crush” right now?",
     "Who here has the best flirting voice?",
@@ -637,7 +628,6 @@ const DECKS = {
   ],
 
   "Extra Dirty (NSFW)": [
-    // Original (non-explicit, adult party vibe)
     "What’s the weirdest thing you find attractive?",
     "What’s the fastest you’ve caught feelings?",
     "What’s the biggest red flag you’ve ignored?",
@@ -702,8 +692,6 @@ const DECKS = {
     "What’s the most “main character” thing you’ve done in a relationship?",
     "What’s your biggest “ick” that you know is unreasonable?",
     "What’s the biggest boundary you’ve ever set too late?",
-
-    // New: a little more risqué (still not explicit / no graphic detail)
     "What’s your go-to “flirty look” move?",
     "What’s a type you *know* is bad for you but still attracts you?",
     "What’s the boldest thing you’ve ever done to show interest?",
@@ -794,15 +782,18 @@ const historyEl = $("#history");
 const historyHint = $("#historyHint");
 const countsEl = $("#counts");
 
-let players = [];                 // ["Alex", "Sam"]
-let scores = {};                  // {Alex:{taken:0,given:0}, ...}
-let currentPlayer = null;         // string
-let lastQuestion = null;          // {deck, text}
-let currentModifier = null;       // "double" | "round" | "onme" | null
+let players = [];
+let scores = {};
+let currentPlayer = null;
+let lastQuestion = null;
+let currentModifier = null;
 
-let used = new Set();             // no-repeat keys
-let pool = [];                    // draw pool: [{deck,text},...]
-let history = [];                 // last 25: [{deck,text,by,modifier,outcome}]
+let used = new Set();
+let pool = [];
+let history = [];
+
+/* NEW: ensure turns actually change */
+let lastPlayer = null;
 
 const MODIFIERS = {
   double: { label:"Make it a double", desc:"Refuse → drink double" },
@@ -812,7 +803,7 @@ const MODIFIERS = {
 
 const deckState = Object.keys(DECKS).map(name => ({
   name,
-  enabled: name !== "Extra Dirty (NSFW)" // locked by default
+  enabled: name !== "Extra Dirty (NSFW)"
 }));
 
 /* -----------------------------
@@ -842,15 +833,28 @@ function shuffleArray(arr){
   return a;
 }
 function randInt(n){ return Math.floor(Math.random()*n); }
+
+/* UPDATED: pick next player, NOT the same as current when possible */
+function chooseNextPlayer(){
+  if(players.length === 0) return null;
+  if(players.length === 1) return players[0];
+  // avoid choosing the same player twice in a row
+  let next = chooseRandomPlayer(currentPlayer);
+  if(next === currentPlayer){
+    // fallback rotate
+    const idx = players.indexOf(currentPlayer);
+    next = players[(idx + 1) % players.length];
+  }
+  return next;
+}
+
 function chooseRandomPlayer(exceptName=null){
   if(players.length === 0) return null;
   if(players.length === 1) return players[0];
-  // try a few times to avoid selecting the same person when needed
   for(let i=0;i<10;i++){
     const p = players[randInt(players.length)];
     if(!exceptName || p !== exceptName) return p;
   }
-  // fallback
   return players[randInt(players.length)];
 }
 function keyFor(q){ return q.deck + "::" + q.text; }
@@ -1086,6 +1090,7 @@ function startGame(){
   if(!canPlay()) return;
 
   currentPlayer = chooseRandomPlayer();
+  lastPlayer = currentPlayer; // track
   lastQuestion = null;
   clearOutcome();
 
@@ -1118,7 +1123,6 @@ function drawQuestion(){
     }
   }
 
-  // everything used
   used = new Set();
   rebuildPool(false);
   toast("Reshuffled 🔄");
@@ -1151,14 +1155,19 @@ function deal(){
   updateCounts();
 }
 
+/* UPDATED: always move to a different player (when possible) */
 function nextTurn(){
-  currentPlayer = chooseRandomPlayer();
+  const prev = currentPlayer;
+  currentPlayer = chooseNextPlayer();
+  lastPlayer = prev;
+
   renderPlayers();
   renderScoreboard();
   renderQuestionMeta();
+
   setTimeout(()=>{
-    if(!lastQuestion) return;
     qText.textContent = `Next up: ${currentPlayer}\n\nTap Deal for the next question.`;
+    clearOutcome();
     renderQuestionMeta();
   }, 900);
 }
@@ -1256,7 +1265,7 @@ function removePlayer(name){
   delete scores[name];
 
   if(currentPlayer === name){
-    currentPlayer = players.length ? chooseRandomPlayer() : null;
+    currentPlayer = players.length ? chooseNextPlayer() : null;
   }
 
   if(players.length < 2){
@@ -1316,7 +1325,7 @@ unlockNSFWEl.addEventListener("change", ()=>{
   rebuildPool(false);
 });
 
-$("#selectAllBtn").addEventListener("click", ()=>{
+document.querySelector("#selectAllBtn").addEventListener("click", ()=>{
   for(const d of deckState){
     if(d.name==="Extra Dirty (NSFW)" && !unlockNSFWEl.checked){
       d.enabled = false;
@@ -1328,7 +1337,7 @@ $("#selectAllBtn").addEventListener("click", ()=>{
   rebuildPool(false);
   toast("Selected decks updated.");
 });
-$("#selectNoneBtn").addEventListener("click", ()=>{
+document.querySelector("#selectNoneBtn").addEventListener("click", ()=>{
   for(const d of deckState){
     d.enabled = false;
   }
@@ -1376,6 +1385,7 @@ resetBtn.addEventListener("click", ()=>{
   history = [];
   lastQuestion = null;
   currentPlayer = null;
+  lastPlayer = null;
 
   qText.textContent = "Add players, then press “🎲 Start Game”.";
   qMeta.innerHTML = "";
@@ -1416,5 +1426,4 @@ init();
 </script>
 </body>
 </html>
-
 
